@@ -3,16 +3,19 @@ function pipenv --wrap=pipenv
         set -l init_cmd ""
 
         if test -f .env
-            set init_cmd $init_cmd "
-            if test -f .env
-                while read -l line
-                    if not string match -qr '^(\s*#|\s*\$)' \"\$line\"
-                        set -l kv (string split -m 1 '=' \"\$line\")
-                        set -gx \$kv (string trim -c '\"'\'' ' \$kv)
-                    end
-                end < .env
-            end
-            "
+            echo "Loading .env environment variables..."
+            while read -l line
+                string match -q -r '^\s*#' "$line"; and continue
+                string match -q -r '^\s*$' "$line"; and continue
+
+                set -l kv (string split -m 1 = $line)
+                set -l key $kv[1]
+                set -l value $kv[2]
+
+                set value (string trim -c '"\' ' -- $value)
+
+                set -gx $key $value
+            end < .env
         end
 
         set init_cmd $init_cmd "source (command pipenv --venv)/bin/activate.fish"
